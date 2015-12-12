@@ -8,15 +8,19 @@ function startGame()
     }
 
     player = {
+        playCounter = 10,
+        playTimer = 200,
         savingCounter = 2
     }
 
     initiateMap()
-
 end
 
 function love.load()
     startGame()
+
+    backgroundSound = love.audio.newSource("background.mp3")
+    backgroundSound:play()
 
     cellImage = love.graphics.newImage("cell.png")
     infectedCellImage = love.graphics.newImage("infected-cell.png")
@@ -28,11 +32,18 @@ function love.load()
 end
 
 function love.update(dt)
-    local won = hasWon()
+    player.playTimer = player.playTimer - 1
+
+    if player.playTimer <= 0 then
+        player.playCounter = player.playCounter + 1
+        player.playTimer = 200
+    end
+
+    print(hasWon())
 
     if map.emptySpots <= 0 then
         print("you fucked up")
-    elseif won then
+    elseif hasWon() then
         print("you won a fucking easy game")
     end
 
@@ -44,7 +55,7 @@ function love.update(dt)
         saveCell(love.mouse.getX(), love.mouse.getY())
     end
 
-    if math.random() < 0.02 then
+    if math.random() < 0.015 then
         expandVirus()
     end
 
@@ -63,6 +74,9 @@ function love.draw()
             end
         end
     end
+
+    love.graphics.print(player.playCounter, 20, 20)
+    love.graphics.print(map.emptySpots, 1100, 20)
 
 end
 
@@ -167,7 +181,9 @@ function protectCell(mouseX, mouseY)
             local maxY = (100 * i) - (150 + 25 * (i - 1)) + cellImage:getHeight() - 10
 
             if maxX > mouseX and mouseX > minX and maxY > mouseY and mouseY > minY then
-                if map.matrix[i][j] == 0 then
+                if map.matrix[i][j] == 0 and player.playCounter > 0 then
+                    player.playCounter = player.playCounter - 1
+
                     map.emptySpots = map.emptySpots - 1
                     map.matrix[i][j] = 2
                     sound:play()
@@ -180,6 +196,7 @@ function protectCell(mouseX, mouseY)
 end
 
 function saveCell(mouseX, mouseY)
+    local sound = love.audio.newSource("saving.wav", "static")
     for i=1,#map.matrix do
         for j=1,#map.matrix[i] do
             local minX = (88 * j) - (88 + ( 44 * (i % 2) ) )
@@ -191,6 +208,7 @@ function saveCell(mouseX, mouseY)
                 if map.matrix[i][j] == 1 and player.savingCounter > 0 then
                     player.savingCounter = player.savingCounter - 1;
                     map.matrix[i][j] = 2
+                    sound:play()
                 end
             end
 

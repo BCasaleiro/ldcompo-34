@@ -28,9 +28,12 @@ function love.load()
 end
 
 function love.update(dt)
-    if map.emptySpots == 0 then
+    local won = hasWon()
+
+    if map.emptySpots <= 0 then
         print("you fucked up")
-        -- end game
+    elseif won then
+        print("you won a fucking easy game")
     end
 
     if love.mouse.isDown("l") then
@@ -41,7 +44,7 @@ function love.update(dt)
         saveCell(love.mouse.getX(), love.mouse.getY())
     end
 
-    if math.random() < 0.01 then
+    if math.random() < 0.02 then
         expandVirus()
     end
 
@@ -64,8 +67,8 @@ function love.draw()
 end
 
 function initiateMap()
-    local columns = love.window.getHeight()/50
-    local rows = math.ceil(love.window.getWidth() /88)
+    local columns = math.floor(love.window.getHeight()/50) - 3
+    local rows = math.floor(love.window.getWidth() /88) + 1
 
     map.emptySpots = columns * rows
     map.size = columns * rows
@@ -86,70 +89,76 @@ function initiateMap()
 end
 
 function expandVirus()
+    local sound = love.audio.newSource("virus.wav", "static")
     for i=1,#map.matrix do
         for j=1,#map.matrix[i] do
 
             if map.matrix[i][j] == 1 then
+                local random = math.abs(math.random(0, 4));
+                if i - 1 > 0 and map.matrix[i-1][j] == 0 then
 
-                if i - 1 > 0 then
-
-                    if math.random() < 0.2 then
-                        if map.matrix[i-1][j] == 0 then
-                            map.matrix[i-1][j] = 1
-                            return
-                        end
+                    if random == 0 then
+                        map.emptySpots = map.emptySpots - 1
+                        map.matrix[i-1][j] = 1
+                        sound:play()
+                        return
                     end
 
-                    if j - 1 > 0  then
-                        if math.random() < 0.2 then
-                            if map.matrix[i-1][j-1] == 0 then
-                                map.matrix[i-1][j-1] = 1
-                                return
-                            end
-                        end
-                    elseif j + 1 <= #map.matrix[i] then
-                        if math.random() < 0.2 then
-                            if map.matrix[i-1][j+1] == 0 then
-                                map.matrix[i-1][j+1] = 1
-                                return
-                            end
-                        end
+                elseif i + 1 <= #map.matrix and map.matrix[i+1][j] == 0 then
+
+                    if random == 1 then
+                        map.emptySpots = map.emptySpots - 1
+                        map.matrix[i+1][j] = 1
+                        sound:play()
+                        return
                     end
 
-                elseif i + 1 <= #map.matrix then
+                elseif j - 1 > 0 and map.matrix[i][j-1] == 0  then
 
-                    if math.random() < 0.2 then
-                        if map.matrix[i+1][j] == 0 then
-                            map.matrix[i+1][j] = 1
-                            return
-                        end
+                    if random == 2 then
+                        map.emptySpots = map.emptySpots - 1
+                        map.matrix[i][j-1] = 1
+                        sound:play()
+                        return
                     end
 
-                    if j - 1 > 0  then
-                        if math.random() < 0.2 then
-                            if map.matrix[i+1][j-1] == 0 then
-                                map.matrix[i+1][j-1] = 1
-                                return
-                            end
-                        end
-                    elseif j + 1 <= #map.matrix[i] then
-                        if math.random() < 0.2 then
-                            if map.matrix[i+1][j+1] == 0 then
-                                map.matrix[i+1][j+1] = 1
-                                return
-                            end
-                        end
+                elseif j + 1 <= #map.matrix[i] and map.matrix[i][j+1] == 0 then
+
+                    if random == 3 then
+                        map.emptySpots = map.emptySpots - 1
+                        map.matrix[i][j+1] = 1
+                        sound:play()
+                        return
                     end
 
                 end
 
             end
-
         end
     end
 end
 
+function hasWon()
+
+    for i=1,#map.matrix do
+        for j=1,#map.matrix[i] do
+
+            if  (i - 1 > 0 and map.matrix[i-1][j] == 0) or
+                (i + 1 <= #map.matrix and map.matrix[i+1][j] == 0) or
+                (j - 1 > 0 and map.matrix[i][j-1] == 0) or
+                (j + 1 <= #map.matrix[i] and map.matrix[i][j+1] == 0)
+            then
+                return false
+            end
+
+        end
+    end
+
+    return true
+end
+
 function protectCell(mouseX, mouseY)
+    local sound = love.audio.newSource("wall.wav", "static")
     for i=1,#map.matrix do
         for j=1,#map.matrix[i] do
             local minX = (88 * j) - (88 + ( 44 * (i % 2) ) )
@@ -161,6 +170,7 @@ function protectCell(mouseX, mouseY)
                 if map.matrix[i][j] == 0 then
                     map.emptySpots = map.emptySpots - 1
                     map.matrix[i][j] = 2
+                    sound:play()
                 end
             end
 

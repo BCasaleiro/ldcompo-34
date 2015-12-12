@@ -32,10 +32,12 @@ function love.draw()
 
     for i=1,#map.matrix do
         for j=1,#map.matrix[i] do
-            if i % 2 == 0 then
-                love.graphics.draw(cellImage, (88 * j) - 88, (100 * i) - (150 + 25 * (i - 1)) )
+            if map.matrix[i][j] == 0 then
+                love.graphics.draw(cellImage, (88 * j) - (88 + ( 44 * (i % 2) ) ), (100 * i) - (150 + 25 * (i - 1)) )
+            elseif map.matrix[i][j] == 1 then
+                love.graphics.draw(infectedCellImage, (88 * j) - (88 + ( 44 * (i % 2) ) ), (100 * i) - (150 + 25 * (i - 1)) )
             else
-                love.graphics.draw(cellImage, (88 * j) - 132, (100 * i) - (150 + 25 * (i - 1)) )
+                love.graphics.draw(protectedCellImage, (88 * j) - (88 + ( 44 * (i % 2) ) ), (100 * i) - (150 + 25 * (i - 1)) )
             end
         end
     end

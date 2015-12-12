@@ -4,16 +4,20 @@ function startGame()
     map = {
         matrix = { },
         emptySpots = 0,
+        virusContained = 500,
         size = 0
     }
 
     player = {
         playCounter = 10,
         playTimer = 200,
-        savingCounter = 2
+        savingCounter = 2,
+        won = false
     }
 
     initiateMap()
+
+    currentState = "intro"
 end
 
 function love.load()
@@ -32,51 +36,99 @@ function love.load()
 end
 
 function love.update(dt)
-    player.playTimer = player.playTimer - 1
+    if currentState == "game" then
 
-    if player.playTimer <= 0 then
-        player.playCounter = player.playCounter + 1
-        player.playTimer = 200
+        player.playTimer = player.playTimer - 1
+        map.virusContained = map.virusContained - 1
+
+        if map.virusContained == 0 then
+            player.won = true
+            currentState = "endgame"
+        end
+
+        if map.emptySpots <= 0 then
+            currentState = "endgame"
+        end
+
+        if player.playTimer <= 0 then
+            player.playCounter = player.playCounter + 1
+            player.playTimer = 200
+        end
+
+
+
+        if love.mouse.isDown("l") then
+            protectCell(love.mouse.getX(), love.mouse.getY())
+        end
+
+        if love.mouse.isDown("r") then
+            saveCell(love.mouse.getX(), love.mouse.getY())
+        end
+
+        if math.random() < 0.015 then
+            expandVirus()
+        end
+
+    elseif currentState == "endgame" then
+
+        if love.keyboard.isDown("1") then
+            startGame()
+        end
+
+    elseif currentState == "intro" then
+
+        if love.keyboard.isDown("2") then
+            currentState = "game"
+        end
+
     end
-
-    print(hasWon())
-
-    if map.emptySpots <= 0 then
-        print("you fucked up")
-    elseif hasWon() then
-        print("you won a fucking easy game")
-    end
-
-    if love.mouse.isDown("l") then
-        protectCell(love.mouse.getX(), love.mouse.getY())
-    end
-
-    if love.mouse.isDown("r") then
-        saveCell(love.mouse.getX(), love.mouse.getY())
-    end
-
-    if math.random() < 0.015 then
-        expandVirus()
-    end
-
 end
 
 function love.draw()
 
-    for i=1,#map.matrix do
-        for j=1,#map.matrix[i] do
-            if map.matrix[i][j] == 0 then
-                love.graphics.draw(cellImage, (88 * j) - (88 + ( 44 * (i % 2) ) ), (100 * i) - (150 + 25 * (i - 1)) )
-            elseif map.matrix[i][j] == 1 then
-                love.graphics.draw(infectedCellImage, (88 * j) - (88 + ( 44 * (i % 2) ) ), (100 * i) - (150 + 25 * (i - 1)) )
-            else
-                love.graphics.draw(protectedCellImage, (88 * j) - (88 + ( 44 * (i % 2) ) ), (100 * i) - (150 + 25 * (i - 1)) )
+    if currentState == "game" then
+
+        for i=1,#map.matrix do
+            for j=1,#map.matrix[i] do
+                if map.matrix[i][j] == 0 then
+                    love.graphics.draw(cellImage, (88 * j) - (88 + ( 44 * (i % 2) ) ), (100 * i) - (150 + 25 * (i - 1)) )
+                elseif map.matrix[i][j] == 1 then
+                    love.graphics.draw(infectedCellImage, (88 * j) - (88 + ( 44 * (i % 2) ) ), (100 * i) - (150 + 25 * (i - 1)) )
+                else
+                    love.graphics.draw(protectedCellImage, (88 * j) - (88 + ( 44 * (i % 2) ) ), (100 * i) - (150 + 25 * (i - 1)) )
+                end
             end
         end
+
+        love.graphics.print(player.playCounter, 20, 20)
+        love.graphics.print(map.emptySpots, 1100, 20)
+
+    elseif currentState == "intro" then
+
+        love.graphics.print("Contain the virus. Don't let him keep growing!", (love.window.getWidth()/2) - 500, (love.window.getHeight()/2) - 150 )
+
+        love.graphics.print("Left click to block the virus.", (love.window.getWidth()/2) - 350, (love.window.getHeight()/2) - 100 )
+        love.graphics.print("You have limited moves to block him.", (love.window.getWidth()/2) - 350, (love.window.getHeight()/2) - 50 )
+        love.graphics.print("Right click to save a cell.", (love.window.getWidth()/2) - 300, (love.window.getHeight()/2) )
+        love.graphics.print("Be carefull you can save only two cells!!", (love.window.getWidth()/2) - 425, (love.window.getHeight()/2) +50 )
+
+        love.graphics.print("Press '2' button to get started", (love.window.getWidth()/2) - 350, (love.window.getHeight()/2)  + 150)
+
+    elseif currentState == "endgame" then
+
+        if player.won then
+            love.graphics.print("You got " .. map.emptySpots .. " points", (love.window.getWidth()/2) - 200, (love.window.getHeight()/2) - 50 )
+            love.graphics.print("Better luck next time", (love.window.getWidth()/2) - 200, (love.window.getHeight()/2) )
+            love.graphics.print("Press '1´ button to get back to menu", (love.window.getWidth()/2) - 325, (love.window.getHeight()/2) + 50 )
+        else
+            love.graphics.print("Well, you really fucked up this time!", (love.window.getWidth()/2) - 200, (love.window.getHeight()/2) - 50 )
+            love.graphics.print("Press '1´ button to get out of this disaster", (love.window.getWidth()/2) - 300, (love.window.getHeight()/2) )
+        end
+
+
+
     end
 
-    love.graphics.print(player.playCounter, 20, 20)
-    love.graphics.print(map.emptySpots, 1100, 20)
 
 end
 
@@ -114,6 +166,7 @@ function expandVirus()
                     if random == 0 then
                         map.emptySpots = map.emptySpots - 1
                         map.matrix[i-1][j] = 1
+                        map.virusContained = 500
                         sound:play()
                         return
                     end
@@ -123,6 +176,7 @@ function expandVirus()
                     if random == 1 then
                         map.emptySpots = map.emptySpots - 1
                         map.matrix[i+1][j] = 1
+                        map.virusContained = 500
                         sound:play()
                         return
                     end
@@ -132,6 +186,7 @@ function expandVirus()
                     if random == 2 then
                         map.emptySpots = map.emptySpots - 1
                         map.matrix[i][j-1] = 1
+                        map.virusContained = 500
                         sound:play()
                         return
                     end
@@ -141,6 +196,7 @@ function expandVirus()
                     if random == 3 then
                         map.emptySpots = map.emptySpots - 1
                         map.matrix[i][j+1] = 1
+                        map.virusContained = 500
                         sound:play()
                         return
                     end
@@ -150,25 +206,6 @@ function expandVirus()
             end
         end
     end
-end
-
-function hasWon()
-
-    for i=1,#map.matrix do
-        for j=1,#map.matrix[i] do
-
-            if  (i - 1 > 0 and map.matrix[i-1][j] == 0) or
-                (i + 1 <= #map.matrix and map.matrix[i+1][j] == 0) or
-                (j - 1 > 0 and map.matrix[i][j-1] == 0) or
-                (j + 1 <= #map.matrix[i] and map.matrix[i][j+1] == 0)
-            then
-                return false
-            end
-
-        end
-    end
-
-    return true
 end
 
 function protectCell(mouseX, mouseY)
